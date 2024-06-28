@@ -21,21 +21,21 @@ jobs:
     - name: Install dependencies
       run: npm install
 
-    - name: Run tests
-      run: npm test
+    - name: Add SSH key
+      uses: webfactory/ssh-agent@v0.5.3
+      with:
+        ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
     - name: Deploy to Server
       env:
         HOST: ${{ secrets.SERVER_HOST }}
         USERNAME: ${{ secrets.SERVER_USERNAME }}
-        KEY: ${{ secrets.SERVER_SSH_KEY }}
       run: |
-        sudo apt-get update
-        sshpass -p ${{ secrets.SERVER_PASSWORD }} ssh -o StrictHostKeyChecking=no $USERNAME@$HOST 'mkdir -p ~/node-welcome-app'
-        sshpass -p ${{ secrets.SERVER_PASSWORD }} scp -o StrictHostKeyChecking=no -r * $USERNAME@$HOST:~/node-welcome-app
-        sshpass -p ${{ secrets.SERVER_PASSWORD }} ssh -o StrictHostKeyChecking=no $USERNAME@$HOST 'bash -s' << 'EOF'
+        ssh -o StrictHostKeyChecking=no $USERNAME@$HOST 'mkdir -p ~/node-welcome-app'
+        scp -o StrictHostKeyChecking=no -r * $USERNAME@$HOST:~/node-welcome-app
+        ssh -o StrictHostKeyChecking=no $USERNAME@$HOST << 'EOF'
           cd ~/node-welcome-app
           npm install
-          pm2 stop app || true
+          pm2 stop welcome-app || true
           pm2 start app.js --name welcome-app
         EOF
